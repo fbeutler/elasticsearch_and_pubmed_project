@@ -8,10 +8,22 @@ from matplotlib import colors as mcolors
 
 from elasticsearch import Elasticsearch
 es = Elasticsearch(hosts=['localhost:9200'])
-index_name = "pubmed-paper-index"
+index_name = "trending-pubmed-paper-index"
 OUTPUT_FOLDER = ''
 
 def get_doc(low_date, up_date, list_of_terms=[]):
+    term_doc = []
+    for sub_string in list_of_terms:
+        term_doc.append({
+            "match_phrase":{
+                "title": sub_string
+            }
+        })
+        term_doc.append({
+            "match_phrase":{
+                "abstract": sub_string
+            }
+        })
     doc = {
         "query": {
             "bool": {
@@ -26,25 +38,12 @@ def get_doc(low_date, up_date, list_of_terms=[]):
                 },
                 {
                     'bool': {
-                        "should": []
+                        "should": term_doc
                     }
                 }]
             }
         }
     }
-    for sub_string in list_of_terms:
-        term_doc = {
-            "match_phrase":{
-                "title": sub_string.lower()
-            }
-        }
-        doc['query']['bool']['must'][1]['bool']['should'].append(term_doc)
-        term_doc = {
-            "match_phrase":{
-                "abstract": sub_string.lower()
-            }
-        }
-        doc['query']['bool']['must'][1]['bool']['should'].append(term_doc)
     return doc
 
 
@@ -60,11 +59,12 @@ def get_paper_count(list_of_terms, timestep):
         up_date = low_date + datetime.timedelta(timestep)
 
         doc = get_doc(low_date, up_date)
-        res = es.search(index=index_name, size=0, body=doc) # we are only interested in the count -> size=0
+        # we are only interested in the count -> size=0
+        res = es.search(index=index_name, size=0, body=doc) 
         norm = res['hits']['total']
 
         doc = get_doc(low_date, up_date, list_of_terms)
-        res = es.search(index=index_name, size=0, body=doc) # we are only interested in the count -> size=0
+        res = es.search(index=index_name, size=10, body=doc) 
 
         # norm should always >0 but just in case   
         if norm > 0:
@@ -87,7 +87,8 @@ def create_trending_plot():
     # get all possible line styles
     linestyles = ['-', '--', '-.', ':']
 
-    list_of_queries = [['cancer treatment'], ['drug resistance', 'drug resistant'], ['alzheimer', 'dementia'], ['child daycare', 'preschool']]
+    list_of_queries = [['blood cancer', 'leukemia'], ['tuberculosis'], ['Ebola'],\
+                       ['alzheimer', 'dementia']]
     timestamp = datetime.datetime.utcnow()
 
     plt.clf()
@@ -95,7 +96,8 @@ def create_trending_plot():
     for i, list_of_terms in enumerate(list_of_queries[:len(colors)]):
         print "i = ", i, "term = ", list_of_terms
         list_of_counts, list_of_dates = get_paper_count(list_of_terms, timestep)
-        plt.plot(list_of_dates, list_of_counts, color=colors[i], label=', '.join(list_of_terms), linestyle=linestyles[i%len(linestyles)])
+        plt.plot(list_of_dates, list_of_counts, color=colors[i], label=', '.join(list_of_terms),\
+                 linestyle=linestyles[i%len(linestyles)])
     plt.xlabel('Date [in steps of %d days]' % timestep)
     plt.title('Relative number of papers for topic vs. time')
     plt.ylabel('Relative number of papers [%]')

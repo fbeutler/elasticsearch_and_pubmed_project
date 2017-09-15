@@ -41,22 +41,13 @@ def create_pubmed_paper_index():
         # shard should be 30Gb, replicas can be produced anytime
         # https://qbox.io/blog/optimizing-elasticsearch-how-many-shards-per-index
         "number_of_shards" : 5,
-        "number_of_replicas": 0,
-        "analysis": {
-            "analyzer": {
-                "lower_keyword": {
-                    "type": "custom",
-                    "tokenizer": "keyword",
-                    "filter": "lowercase"
-                }
-            }
-        }
+        "number_of_replicas": 0
     }
     mappings = {
         "pubmed-paper": {
             "properties" : {
-                'title': { 'type': 'string', "analyzer": "lower_keyword"},
-                'abstract': {'type': 'string', "analyzer": "lower_keyword"},
+                "title": { "type": "string", "analyzer": "standard"},
+                "abstract": { "type": "string", "analyzer": "standard"},
                 "created_date": {
                     "type":   "date",
                     "format": "yyyy-MM-dd"
@@ -71,9 +62,9 @@ def create_pubmed_paper_index():
 
 def get_es_docs(paper):
     source = {
-        'title': paper.title,
-        'created_date': paper.created_datetime.date(),
-        'abstract': paper.abstract
+        "title": paper.title,
+        "created_date": paper.created_datetime.date(),
+        "abstract": paper.abstract
     }
     doc = {
         "index": {

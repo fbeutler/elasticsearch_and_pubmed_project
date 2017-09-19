@@ -87,7 +87,7 @@ def create_trending_plot():
     # get all possible line styles
     linestyles = ['-', '--', '-.', ':']
 
-    list_of_queries = [['blood cancer', 'leukemia'], ['tuberculosis'], ['Ebola'],\
+    list_of_queries = [['prostate cancer'], ['blood cancer', 'leukemia'], ['Ebola'],\
                        ['alzheimer', 'dementia']]
     timestamp = datetime.datetime.utcnow()
 
